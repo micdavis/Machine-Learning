@@ -4,8 +4,8 @@ class Perceptron
 {
 public:
 	float value;
-	Weight input[];
-	Weight output[];
+	Weight *input;
+	Weight *output;
 
 	Perceptron (int, int, float);
 };
