@@ -1,5 +1,5 @@
 #include "Weight.h"
-using namspace std;
+using namespace std;
 class Perceptron
 {
 public:
@@ -7,5 +7,5 @@ public:
 	Weight *input;
 	Weight *output;
 
-	Perceptron (int, int, float);
+	Perceptron (int numInput, int numOutput, float value);
 };

@@ -1,10 +1,10 @@
 #include "Perceptron.h"
-using standard std;
+using namespace std;
 class Weight
 {
-	float val;
+	float weight;
 	Perceptron input;
 	Perceptron output;
 
-	Weight(Perceptron, Perceptron, float);
+	Weight(Perceptron input, Perceptron output, float weight);
 };

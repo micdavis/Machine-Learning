@@ -1,10 +1,13 @@
 #include "Weight.h"
 #include "Perceptron.h"
-using standard std;
+using namespace std;
 class Network
 {
 	Perceptron *perceptron;
 	Weight *weight;
 
-	Network(int*);
+	Network(int perceptronCountPerLayer)
+	{
+		int len = sizeof(perceptronCountPerLayer);
+	}
 }
