@@ -6,8 +6,5 @@ class Network
 	Perceptron *perceptron;
 	Weight *weight;
 
-	Network(int perceptronCountPerLayer)
-	{
-		int len = sizeof(perceptronCountPerLayer);
-	}
+	Network(int perceptronCountPerLayer, int numLayers);
 }
