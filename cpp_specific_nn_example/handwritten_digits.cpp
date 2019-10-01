@@ -16,36 +16,92 @@ int main () {
 	double weightsOne[784][15] = new double [784][15];
 	double weightsTwo[15][10] = new double [15][10];
 
-	//number of test cases ran through
-	for(int i = 0; i < 10000; i++)
+	//number of learning cycles
+	for(int i = 0; i < 100; i++)
 	{
-		//set input layers to an input and expected output
-		double expected = new double[10];
-		double actual = new double[10]; 
-
-		//forward propagation
-		for(int i = 0; i < 15; i++)
+		double weightsOneDelta[784][15] = new double [784][15];
+		double hiddenBiasDelta[15] = new double [15];
+		double weightsTwoDelta[15][10] = new double [15][10]; 
+		double outputBiasDelta[10] = new double[10];
+		//number of test cases ran through
+		for(int j = 0; j < 100; j++)
 		{
-			hiddenLayer[i] = sigmoid(matrixMultiplySum(inputLayer, weightsOne) + hiddenLayerBias[i]);
+			//set input layers to an input and expected output
+			double expectedOutput = new double[10];
+
+			//forward propagation
+			for(int k = 0; k < 15; k++)
+			{
+				hiddenLayer[k] = sigmoid(matrixMultiplySum(inputLayer, weightsOne, k) + hiddenLayerBias[k]);
+			}
+			for(int k = 0; k < 10; k++)
+			{
+				outputLayer[k] = sigmoid(matrixMultiplySum(hiddenLayer, weightsTwo, k) + outputLayerBias[k]);
+			}
+
+			//on to the back prop
+
+			//this is the output layer biases and weights
+			for(int k = 0; k < 10; k++)
+			{
+				for(int l = 0; l < 15; l++)
+				{
+					weightsTwoDelta[l][k] += tweakWeight(hiddenLayer[l], matrixMultiplySum(hiddenLayer, weightsTwo, k) + outputLayerBias[k], expectedOutput[k]);
+				}
+				outputBiasDelta[k] += tweakBias(matrixMultiplySum(hiddenLayer, weightsTwo, k) + outputLayerBias[k], expectedOutput[k]);
+			}
+
+			//getting the expective activation for the hidden layer
+			double expectedHidden = new double[15];
+			for(int k = 0; k < 10; k++)
+			{
+				for(int l = 0; l < 15; l++)
+				{
+					expectedHidden[l] += expectedActiviation(weightsTwo[l][k], matrixMultiplySum(hiddenLayer, weightsTwo, k) + outputLayerBias[k], expectedOutput[k]);
+				}
+			}
+
+			for(int k = 0; k < 15; k++)
+			{
+				expectedHidden[k] = expectedHidden[k] / 10.0;
+			}
+
+			//repeat above for the hidden later biases and weights
+			for(int k = 0; k < 15; k++)
+			{
+				for(int l = 0; l < 784; l++)
+				{
+					weightsOneDelta[l][k] += tweakWeight(inputLayer[l], matrixMultiplySum(inputLayer, weightsOne, k) + hiddenLayerBias[k], expectedHidden[k]);
+				}
+				hiddenLayerBias[k] += tweakBias(matrixMultiplySum(inputLayer, weightsOne, k) + hiddenLayerBias[k], expectedHidden[k]);
+			}
 		}
-		for(int i = 0; i < 10; i++)
+
+		//average all the delta biases and weights and apply them to the NN
+		for(int j = 0; j < 784; j++)
 		{
-			outputLayer[i] = sigmoid(matrixMultiplySum(hiddenLayer, weightsTwo) + outputLayerBias[i]);
+			for(int k = 0; k < 15; k++)
+			{
+				weightsOneDelta[j][k] = weightsOneDelta[j][k] / 100.0;
+				weightsOne[j][k] += weightsOneDelta[j][k];
+			}
 		}
 
-		double cost = cost(actual expected);
-
-		
+		for(int j = 0; j < 15; j++)
+		{
+			hiddenBiasDelta[j] = hiddenBiasDelta[j] / 100.0;
+			hiddenLayerBias[j] = hiddenBiasDelta[j];
+		}
 	}
 }
 
 
-double matrixMultiplySum(double inputs[], double weights[])
+double matrixMultiplySum(double inputs[], double weights[][], int indexInLayer)
 {
 	double sum = 0;
-	for(int i = 0; i < inputs.len; i++)
+	for(int i = 0; i < weights.len; i++)
 	{
-		sum += imputs[i] * weights[i];
+		sum += inputs[i] * weights[i][indexInLayer];
 	}
 	return sum;
 }
@@ -71,4 +127,19 @@ double calcCost(double actual[], double expected[])
 		cost += pow(actual - expected, 2);
 	}
 	return cost;
+}
+
+double tweakWeight(double prevActivation, double currentNeuronVal, double expected)
+{
+	return prevActivation * tweakBias(currentNeuronVal, expected);
+}
+
+double tweakBias(double currentNeuronVal, double expected)
+{
+	return sigmoidDerivative(currentNeuronVal) * 2 * (sigmoid(currentNeuronVal) - expected);
+}
+
+double expectedActiviation(double weight, double currentNeuronVal, double expected)
+{
+	return weight * tweakBias(currentNeuronVal, expected);
 }
