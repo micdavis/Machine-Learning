@@ -109,7 +109,7 @@ int main () {
 
 		double error = 0.0;
 		//number of test cases ran through
-		for(int j = 0; j < 2000; j++)
+		for(int j = 0; j < 20000; j++)
 		{
 			//set input layers to an input and expected output
 			double* expectedOutput = new double[10];
@@ -143,7 +143,7 @@ int main () {
 				outputLayer[k] = sigmoid(matrixMultiplySum(hiddenLayer, weightsTwo, k, 15) + outputLayerBias[k]);
 				if(i == 9)
 				{
-					std::cout << outputLayer[k] << " : " << expectedOutput[k] << std::endl;
+					//std::cout << outputLayer[k] << " : " << expectedOutput[k] << std::endl;
 					if(outputLayer[k] > max) 
 					{
 						max = outputLayer[k];
@@ -165,12 +165,20 @@ int main () {
 			double* deltaCost = backPropLayer(weightsTwo, outputLayerBias, deltaCost1, hiddenLayer, 15, 10);
 			backPropLayer(weightsOne, hiddenLayerBias, deltaCost, inputLayer, 784, 15);
 			delete[] deltaCost;
-			delete[] deltaCost1;
-			delete[] expectedOutput;
+			//delete[] deltaCost1;
+			delete expectedOutput;
 		}
-		std::cout << "Round " << i << " error: " << error/2000.0 << std::endl;
+		std::cout << "Round " << i << " error: " << error/20000.0 << std::endl;
 		delete[] weightsOneDelta;
+		/*for(int j = 0; j < 784; j++)
+		{
+			delete weightsOneDelta[j];
+		}*/
 		delete[] weightsTwoDelta;
+		/*for(int j = 0; j < 15; j++)
+		{
+			delete weightsTwoDelta[j];
+		}*/
 		delete[] hiddenBiasDelta;
 		delete[] outputBiasDelta;
 	}
@@ -220,17 +228,21 @@ double* backPropLayer(double** weights, double* biases, double* deltaCost, doubl
 	for(int i = 0; i < weightsLenTwo; i++)
 	{
 		if(deltaBiases[i] == -0) deltaBiases[i] = 0;
-		biases[i] += deltaBiases[i];
+		biases[i] -= deltaBiases[i];
 		//std::cout << "deltaBiases: " << i << " : " << deltaBiases[i] << std::endl;
 		for(int j = 0; j < weightsLen; j++)
 		{
 			if(deltaWeights[j][i] == -0) deltaWeights[j][i] = 0;
-			weights[j][i] += deltaWeights[j][i];
+			weights[j][i] -= deltaWeights[j][i];
 			//std::cout << "deltaWeights: " << j << "  " << i << " : " << deltaWeights[j][i] << std::endl;
 		}
 	}
 
 	delete[] deltaBiases;
+	for(int i = 0; i < weightsLen; i++)
+	{
+		delete[] deltaWeights[i];
+	}
 	delete[] deltaWeights;
 
 	//return for next layer of backprop
