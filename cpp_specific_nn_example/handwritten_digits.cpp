@@ -251,13 +251,14 @@ double* backPropLayer(double** weights, double* biases, double* deltaCost, doubl
 	for(int i = 0; i < weightsLenTwo; i++)
 	{
 		deltaBiases[i] = 0.0;
+		double dotProduct = matrixMultiplySum(prevActivation, weights, i, weightsLen);
 		for(int j = 0; j < weightsLen; j++)
 		{
 			deltaWeights[j][i] = 0.0;
-			deltaWeights[j][i] = prevActivation[j] * sigmoidDerivative(prevActivation[j] * weights[j][i] + biases[i]) * deltaCost[i];
-			deltaNextActivation[j] += weights[j][i] * sigmoidDerivative(prevActivation[j] * weights[j][i] + biases[i]) * deltaCost[i];
+			deltaWeights[j][i] = prevActivation[j] * sigmoidDerivative(dotProduct + biases[i]) * deltaCost[i];
+			deltaNextActivation[j] += weights[j][i] * sigmoidDerivative(dotProduct + biases[i]) * deltaCost[i];
 		}
-		deltaBiases[i] = sigmoidDerivative(matrixMultiplySum(prevActivation, weights, i, 15) + biases[i]) * deltaCost[i];
+		deltaBiases[i] = sigmoidDerivative(dotProduct + biases[i]) * deltaCost[i];
 	}
 
 	//applying the deltas to the neural net
