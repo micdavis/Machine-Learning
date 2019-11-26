@@ -1,4 +1,3 @@
-
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -7,24 +6,10 @@
 #include <cctype>
 #include <unistd.h>
 #include <time.h>
+#include <thread>
 using namespace std;
 
-
-
-#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
-#define BYTE_TO_BINARY(byte)  \
-  (byte & 0x80 ? '1' : '0'), \
-  (byte & 0x40 ? '1' : '0'), \
-  (byte & 0x20 ? '1' : '0'), \
-  (byte & 0x10 ? '1' : '0'), \
-  (byte & 0x08 ? '1' : '0'), \
-  (byte & 0x04 ? '1' : '0'), \
-  (byte & 0x02 ? '1' : '0'), \
-  (byte & 0x01 ? '1' : '0') 
-
-
-
-double* backPropLayer(double** weights, double* biases, double* deltaCost, double* prevActivation, int weightsLen, int weigthLenTwo, double* deltaNextActivation);
+double* backPropLayer(double** weights, double* biases, double* deltaCost, double* prevActivation, int weightsLen, int weigthLenTwo, double* deltaNextActivation, double* nextActivation);
 double sigmoid(double x);
 double sigmoidDerivative(double x);
 double matrixMultiplySum(double* inputs, double** weights, int indexInLayer, int weightsLen);
@@ -45,31 +30,29 @@ int main () {
 	srand(time(NULL));
 	//defining layers of specific sizeof
 	double* inputLayer = new double[784];
-	double* hiddenLayer = new double[15];
+	double* hiddenLayer = new double[800];
 	double* outputLayer = new double[10];
 
 	//defining biases of specific size
-	double* hiddenLayerBias = new double[15];
+	double* hiddenLayerBias = new double[800];
 	double* outputLayerBias = new double[10];
 
-	double max = 0.0;
-	int maxindex = 0;
+	double max = 10.0;
+	int maxIndex = 0;
 	int expectedindex = 0;
 	//defining weights of specific size
 	double** weightsOne = new double* [784];
 	for(int i = 0; i < 784; i++)
 	{
-		weightsOne[i] = new double[15
-];
-		for(int j = 0; j < 15
-; j++)
+		weightsOne[i] = new double[800];
+		for(int j = 0; j < 800; j++)
 		{
 			weightsOne[i][j] = (double)(rand() % 20 - 10);
 		}
 	}
 
-	double** weightsTwo = new double* [15];
-	for(int i = 0; i < 15; i++)
+	double** weightsTwo = new double* [800];
+	for(int i = 0; i < 800; i++)
 	{
 		weightsTwo[i] = new double[10];
 		for(int j = 0; j < 10; j++)
@@ -78,7 +61,7 @@ int main () {
 		}
 	}
 	//number of learning cycles
-	for(int i = 0; i < 100; i++)
+	for(int i = 0; i < 1; i++)
 	{
 
 		ifstream dataFile;
@@ -95,98 +78,103 @@ int main () {
 				labelFile >> in;
 			}
 			dataFile >> in;
-			//printf("Leading text "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(in));
-			//std:cout << in << std::endl;
 		}		
 
 		double** weightsOneDelta = new double* [784];
 		for(int j = 0; j < 784; j++)
 		{
-			weightsOneDelta[j] = new double[15];
+			weightsOneDelta[j] = new double[800];
 		}
 
-		double* hiddenBiasDelta = new double [15];
+		double* hiddenBiasDelta = new double [800];
+		for(int q = 0; q < 800; q++)
+		{
+			hiddenBiasDelta[q] = 0;
+		}
 
-		double** weightsTwoDelta = new double* [15]; 
-		for(int j = 0; j < 15; j++)
+		double** weightsTwoDelta = new double* [800]; 
+		for(int j = 0; j < 800; j++)
 		{
 			weightsTwoDelta[j] = new double[10];
 		}
 
 		double* outputBiasDelta = new double[10];
-
+		for(int q = 0; q < 10; q++)
+		{
+			outputBiasDelta[q] = 0;
+		}
 		double error = 0.0;
 
+		double score = 0.0;
+
 		//number of test cases ran through
-		for(int j = 0; j < 5000; j++)
+		for(int j = 0; j < 1000; j++)
 		{
 			//set input layers to an input and expected output
 			double* expectedOutput = new double[10];
+			for(int q = 0; q < 10; q++)
+			{
+				expectedOutput[q] = 0;
+			}
 
 			char in;
 			labelFile.get(in);
-			//printf("Leading text "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(in));
 			expectedindex = (int) in;
 			expectedOutput[(int)in] = 1.0;
-
-			//std::cout << (int)in << std::endl;
 
 			for(int k = 0; k < 784; k++)
 			{
 				char in;
 				dataFile.get(in);	
-				//std::cout << (std::byte)in << std::endl;			
 				inputLayer[k] = in;			
-				//std::cout << k << ": " << hex2int(in) << std::endl;
 			}
 
 			double* deltaCost1 = new double[10];
 			
 			//forward propagation
-			for(int k = 0; k < 15; k++)
+			for(int k = 0; k < 800; k++)
 			{
 				hiddenLayer[k] = sigmoid(matrixMultiplySum(inputLayer, weightsOne, k, 784) + hiddenLayerBias[k]);
 			}
 			for(int k = 0; k < 10; k++)
 			{
-				outputLayer[k] = sigmoid(matrixMultiplySum(hiddenLayer, weightsTwo, k, 15) + outputLayerBias[k]);
-				if(i == 900000)
+				outputLayer[k] = sigmoid(matrixMultiplySum(hiddenLayer, weightsTwo, k, 800) + outputLayerBias[k]);
+				if(outputLayer[k] > max) 
 				{
-					//std::cout << outputLayer[k] << " : " << expectedOutput[k] << std::endl;
-					if(outputLayer[k] > max) 
-					{
-						max = outputLayer[k];
-						maxindex = k;
-					}
+					max = outputLayer[k];
+					maxIndex = k;
 				}
 				deltaCost1[k] = 2.0 * (outputLayer[k] - expectedOutput[k]);
 			}
+			if(maxIndex == expectedindex)
+			{
+				score++;
+			}
 			max = 0;
 
-			if(i == 9)
+			/*if(j % 100 == 0)
 			{
-				//std::cout << "A: " << maxindex << "E: " << expectedindex << std::endl;				
-			}
+				std::cout << "j: " << j << std::endl;				
+			}*/
 
 			error += calcError(expectedOutput, outputLayer);
 			//on to the back prop
-			//std::cout << j << ": " << calcError(expectedOutput, outputLayer)  << std::endl;
-			double* deltaCost = new double[15];
-			deltaCost = backPropLayer(weightsTwo, outputLayerBias, deltaCost1, hiddenLayer, 15, 10, deltaCost);
+			double* deltaCost = new double[800];
+			deltaCost = backPropLayer(weightsTwo, outputLayerBias, deltaCost1, hiddenLayer, 800, 10, deltaCost, outputLayer);
 			double* arbRet = new double[784];
-			backPropLayer(weightsOne, hiddenLayerBias, deltaCost, inputLayer, 784, 15, arbRet);
+			backPropLayer(weightsOne, hiddenLayerBias, deltaCost, inputLayer, 784, 800, arbRet, hiddenLayer);
 			delete[] arbRet;
 			delete[] deltaCost;				
 			delete[] deltaCost1;
 			delete[] expectedOutput;
 		}
-		std::cout << "Round " << i << " error: " << error/5000.0 << std::endl;
+		std::cout << "Round " << i << " error: " << error/1000.0 << " : " << score/1000.0 << std::endl;
 		for(int j = 0; j < 784; j++)
 		{
 			delete[] weightsOneDelta[j];
 		}
 		delete[] weightsOneDelta;
-		for(int j = 0; j < 15; j++)
+		for(int j = 0; j < 800; j++)
 		{
 			delete[] weightsTwoDelta[j];
 		}
@@ -206,12 +194,56 @@ int main () {
 		delete[] weightsOne[j];
 	}
 	delete[] weightsOne;
-	for(int j = 0; j < 15; j++)
+	for(int j = 0; j < 800; j++)
 	{
 		delete[] weightsTwo[j];
 	}
 	delete[] weightsTwo;
 
+	//saving my neural network
+	ofstream weightsOneOutputFile;
+	weightsOneOutputFile.open("weightsOneOutputFile.txt");
+
+	for(int i = 0; i < 784; i++)
+	{
+		for(int j = 0; j < 800; j++)
+		{
+			weightsOneOutputFile << weightsOne[i][j] << " ";
+			weightsOneOutputFile << std::endl;
+		}
+		weightsOneOutputFile << std::endl;
+	}
+	
+	ofstream hiddenLayerBiasOutputFile;
+	hiddenLayerBiasOutputFile.open("hiddenLayerBiasOutputFile.txt");
+	
+	for(int i = 0; i < 800; i++)
+	{
+		hiddenLayerBiasOutputFile << hiddenLayerBias[i] << " ";
+		hiddenLayerBiasOutputFile << std::endl;
+	}
+
+	ofstream weightsTwoOutputFile;
+	weightsTwoOutputFile.open("weightsTwoOutputFile.txt");
+
+	for(int i = 0; i < 800; i++)
+	{
+		for(int j = 0; j < 10; j++)
+		{
+			weightsTwoOutputFile << weightsTwo[i][j] << " ";
+			weightsTwoOutputFile << std::endl;
+		}
+		weightsTwoOutputFile << std::endl;
+	}
+
+	ofstream outputLayerBiasOutputFile;
+	outputLayerBiasOutputFile.open("outputLayerBiasOutputFile.txt");
+
+	for(int i = 0; i < 10; i++)
+	{
+		outputLayerBiasOutputFile << outputLayerBias[i] << " ";
+		outputLayerBiasOutputFile << std::endl;
+	}
 }
 
 
@@ -221,9 +253,7 @@ double matrixMultiplySum(double* inputs, double** weights, int indexInLayer, int
 	for(int i = 0; i < weightsLen; i++)
 	{
 		sum += inputs[i] * weights[i][indexInLayer];
-		//std::cout << "SUM: " << inputs[i] << " + " << weights[i][indexInLayer] << "  " << indexInLayer << endl;
 	}
-	//std::cout << "SUM: " << sum << endl;
 	return sum;
 }
 
@@ -233,7 +263,7 @@ double sigmoid(double x)
 	return 1.0/(1.0 + pow(M_E,-x));
 }
 
-double* backPropLayer(double** weights, double* biases, double* deltaCost, double* prevActivation, int weightsLen, int weightsLenTwo, double* deltaNextActivation)
+double* backPropLayer(double** weights, double* biases, double* deltaCost, double* prevActivation, int weightsLen, int weightsLenTwo, double* deltaNextActivation, double* nextActivation)
 {
 	double* deltaBiases = new double[weightsLenTwo];
 	double** deltaWeights = new double* [weightsLen];
@@ -248,30 +278,25 @@ double* backPropLayer(double** weights, double* biases, double* deltaCost, doubl
 	}
 
 	//setting the deltas
-	for(int i = 0; i < weightsLenTwo; i++)
+	for(int k = 0; k < weightsLen; k++)
 	{
-		deltaBiases[i] = 0.0;
-		double dotProduct = matrixMultiplySum(prevActivation, weights, i, weightsLen);
-		for(int j = 0; j < weightsLen; j++)
+		for(int j = 0; j < weightsLenTwo; j++)
 		{
-			deltaWeights[j][i] = 0.0;
-			deltaWeights[j][i] = prevActivation[j] * sigmoidDerivative(dotProduct + biases[i]) * deltaCost[i];
-			deltaNextActivation[j] += weights[j][i] * sigmoidDerivative(dotProduct + biases[i]) * deltaCost[i];
+			double sigmoidDerivativeResult = sigmoidDerivative(nextActivation[j]);
+			
+			deltaNextActivation[k] += weights[k][j] * sigmoidDerivativeResult * deltaCost[j];
+			deltaWeights[k][j] = prevActivation[k] * sigmoidDerivativeResult * deltaCost[j];
+			deltaBiases[j] = sigmoidDerivativeResult * deltaCost[j];
 		}
-		deltaBiases[i] = sigmoidDerivative(dotProduct + biases[i]) * deltaCost[i];
 	}
 
 	//applying the deltas to the neural net
-	for(int i = 0; i < weightsLenTwo; i++)
+	for(int k = 0; k < weightsLen; k++)
 	{
-		if(deltaBiases[i] == -0) deltaBiases[i] = 0;
-		biases[i] -= 2 * deltaBiases[i];
-		//std::cout << "deltaBiases: " << i << " : " << deltaBiases[i] << std::endl;
-		for(int j = 0; j < weightsLen; j++)
+		for(int j = 0; j < weightsLenTwo; j++)
 		{
-			if(deltaWeights[j][i] == -0) deltaWeights[j][i] = 0;
-			weights[j][i] -= .2 * deltaWeights[j][i];
-			//std::cout << "deltaWeights: " << j << "  " << i << " : " << deltaWeights[j][i] << std::endl;
+			biases[j] -= .03 * deltaBiases[j];
+			weights[k][j] -= .03 * deltaWeights[k][j];
 		}
 	}
 
