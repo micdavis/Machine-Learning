@@ -30,11 +30,11 @@ int main () {
 	srand(time(NULL));
 	//defining layers of specific sizeof
 	double* inputLayer = new double[784];
-	double* hiddenLayer = new double[125];
+	double* hiddenLayer = new double[800];
 	double* outputLayer = new double[10];
 
 	//defining biases of specific size
-	double* hiddenLayerBias = new double[125];
+	double* hiddenLayerBias = new double[800];
 	double* outputLayerBias = new double[10];
 
 	double max = 10.0;
@@ -44,15 +44,15 @@ int main () {
 	double** weightsOne = new double* [784];
 	for(int i = 0; i < 784; i++)
 	{
-		weightsOne[i] = new double[125];
-		for(int j = 0; j < 125; j++)
+		weightsOne[i] = new double[800];
+		for(int j = 0; j < 800; j++)
 		{
 			weightsOne[i][j] = (double)(rand() % 20 - 10);
 		}
 	}
 
-	double** weightsTwo = new double* [125];
-	for(int i = 0; i < 125; i++)
+	double** weightsTwo = new double* [800];
+	for(int i = 0; i < 800; i++)
 	{
 		weightsTwo[i] = new double[10];
 		for(int j = 0; j < 10; j++)
@@ -61,7 +61,7 @@ int main () {
 		}
 	}
 	//number of learning cycles
-	for(int i = 0; i < 100; i++)
+	for(int i = 0; i < 1; i++)
 	{
 
 		ifstream dataFile;
@@ -83,17 +83,17 @@ int main () {
 		double** weightsOneDelta = new double* [784];
 		for(int j = 0; j < 784; j++)
 		{
-			weightsOneDelta[j] = new double[125];
+			weightsOneDelta[j] = new double[800];
 		}
 
-		double* hiddenBiasDelta = new double [125];
-		for(int q = 0; q < 125; q++)
+		double* hiddenBiasDelta = new double [800];
+		for(int q = 0; q < 800; q++)
 		{
 			hiddenBiasDelta[q] = 0;
 		}
 
-		double** weightsTwoDelta = new double* [125]; 
-		for(int j = 0; j < 125; j++)
+		double** weightsTwoDelta = new double* [800]; 
+		for(int j = 0; j < 800; j++)
 		{
 			weightsTwoDelta[j] = new double[10];
 		}
@@ -108,7 +108,7 @@ int main () {
 		double score = 0.0;
 
 		//number of test cases ran through
-		for(int j = 0; j < 1001; j++)
+		for(int j = 0; j < 1000; j++)
 		{
 			//set input layers to an input and expected output
 			double* expectedOutput = new double[10];
@@ -132,13 +132,13 @@ int main () {
 			double* deltaCost1 = new double[10];
 			
 			//forward propagation
-			for(int k = 0; k < 125; k++)
+			for(int k = 0; k < 800; k++)
 			{
 				hiddenLayer[k] = sigmoid(matrixMultiplySum(inputLayer, weightsOne, k, 784) + hiddenLayerBias[k]);
 			}
 			for(int k = 0; k < 10; k++)
 			{
-				outputLayer[k] = sigmoid(matrixMultiplySum(hiddenLayer, weightsTwo, k, 125) + outputLayerBias[k]);
+				outputLayer[k] = sigmoid(matrixMultiplySum(hiddenLayer, weightsTwo, k, 800) + outputLayerBias[k]);
 				if(outputLayer[k] > max) 
 				{
 					max = outputLayer[k];
@@ -152,79 +152,36 @@ int main () {
 			}
 			max = 0;
 
-			//std::cout << "j: " << j << std::endl;
+			/*if(j % 100 == 0)
+			{
+				std::cout << "j: " << j << std::endl;				
+			}*/
 
 			error += calcError(expectedOutput, outputLayer);
 			//on to the back prop
-			double* deltaCost = new double[125];
-			deltaCost = backPropLayer(weightsTwo, outputLayerBias, deltaCost1, hiddenLayer, 125, 10, deltaCost, outputLayer);
+			double* deltaCost = new double[800];
+			deltaCost = backPropLayer(weightsTwo, outputLayerBias, deltaCost1, hiddenLayer, 800, 10, deltaCost, outputLayer);
 			double* arbRet = new double[784];
-			backPropLayer(weightsOne, hiddenLayerBias, deltaCost, inputLayer, 784, 125, arbRet, hiddenLayer);
+			backPropLayer(weightsOne, hiddenLayerBias, deltaCost, inputLayer, 784, 800, arbRet, hiddenLayer);
 			delete[] arbRet;
 			delete[] deltaCost;				
 			delete[] deltaCost1;
 			delete[] expectedOutput;
 		}
-		std::cout << "Round " << i << " error: " << error/1001.0 << " : " << score/1001.0 << std::endl;
+		std::cout << "Round " << i << " error: " << error/1000.0 << " : " << score/1000.0 << std::endl;
 		for(int j = 0; j < 784; j++)
 		{
 			delete[] weightsOneDelta[j];
 		}
 		delete[] weightsOneDelta;
-		for(int j = 0; j < 125; j++)
+		for(int j = 0; j < 800; j++)
 		{
 			delete[] weightsTwoDelta[j];
 		}
 		delete[] weightsTwoDelta;
 		delete[] hiddenBiasDelta;
 		delete[] outputBiasDelta;
-
-		//saving my neural network
-		ofstream weightsOneOutputFile;
-		weightsOneOutputFile.open("weightsOneOutputFile.txt");
-
-		for(int i = 0; i < 784; i++)
-		{
-			for(int j = 0; j < 125; j++)
-			{
-				weightsOneOutputFile << weightsOne[i][j] << " ";
-				weightsOneOutputFile << std::endl;
-			}
-			weightsOneOutputFile << std::endl;
-		}
-		
-		ofstream hiddenLayerBiasOutputFile;
-		hiddenLayerBiasOutputFile.open("hiddenLayerBiasOutputFile.txt");
-		
-		for(int i = 0; i < 125; i++)
-		{
-			hiddenLayerBiasOutputFile << hiddenLayerBias[i] << " ";
-			hiddenLayerBiasOutputFile << std::endl;
-		}
-
-		ofstream weightsTwoOutputFile;
-		weightsTwoOutputFile.open("weightsTwoOutputFile.txt");
-
-		for(int i = 0; i < 125; i++)
-		{
-			for(int j = 0; j < 10; j++)
-			{
-				weightsTwoOutputFile << weightsTwo[i][j] << " ";
-				weightsTwoOutputFile << std::endl;
-			}
-			weightsTwoOutputFile << std::endl;
-		}
-
-		ofstream outputLayerBiasOutputFile;
-		outputLayerBiasOutputFile.open("outputLayerBiasOutputFile.txt");
-
-		for(int i = 0; i < 10; i++)
-		{
-			outputLayerBiasOutputFile << outputLayerBias[i] << " ";
-			outputLayerBiasOutputFile << std::endl;
-		}
 	}
-
 	delete[] inputLayer;
 	delete[] hiddenLayer;
 	delete[] outputLayer;
@@ -237,11 +194,56 @@ int main () {
 		delete[] weightsOne[j];
 	}
 	delete[] weightsOne;
-	for(int j = 0; j < 125; j++)
+	for(int j = 0; j < 800; j++)
 	{
 		delete[] weightsTwo[j];
 	}
 	delete[] weightsTwo;
+
+	//saving my neural network
+	ofstream weightsOneOutputFile;
+	weightsOneOutputFile.open("weightsOneOutputFile.txt");
+
+	for(int i = 0; i < 784; i++)
+	{
+		for(int j = 0; j < 800; j++)
+		{
+			weightsOneOutputFile << weightsOne[i][j] << " ";
+			weightsOneOutputFile << std::endl;
+		}
+		weightsOneOutputFile << std::endl;
+	}
+	
+	ofstream hiddenLayerBiasOutputFile;
+	hiddenLayerBiasOutputFile.open("hiddenLayerBiasOutputFile.txt");
+	
+	for(int i = 0; i < 800; i++)
+	{
+		hiddenLayerBiasOutputFile << hiddenLayerBias[i] << " ";
+		hiddenLayerBiasOutputFile << std::endl;
+	}
+
+	ofstream weightsTwoOutputFile;
+	weightsTwoOutputFile.open("weightsTwoOutputFile.txt");
+
+	for(int i = 0; i < 800; i++)
+	{
+		for(int j = 0; j < 10; j++)
+		{
+			weightsTwoOutputFile << weightsTwo[i][j] << " ";
+			weightsTwoOutputFile << std::endl;
+		}
+		weightsTwoOutputFile << std::endl;
+	}
+
+	ofstream outputLayerBiasOutputFile;
+	outputLayerBiasOutputFile.open("outputLayerBiasOutputFile.txt");
+
+	for(int i = 0; i < 10; i++)
+	{
+		outputLayerBiasOutputFile << outputLayerBias[i] << " ";
+		outputLayerBiasOutputFile << std::endl;
+	}
 }
 
 
@@ -293,8 +295,8 @@ double* backPropLayer(double** weights, double* biases, double* deltaCost, doubl
 	{
 		for(int j = 0; j < weightsLenTwo; j++)
 		{
-			biases[j] -= .5 * deltaBiases[j];
-			weights[k][j] -= .5 * deltaWeights[k][j];
+			biases[j] -= .03 * deltaBiases[j];
+			weights[k][j] -= .03 * deltaWeights[k][j];
 		}
 	}
 
