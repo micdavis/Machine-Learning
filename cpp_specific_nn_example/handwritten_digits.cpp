@@ -7,6 +7,13 @@
 #include <unistd.h>
 #include <time.h>
 #include <thread>
+
+#define HIDDENLAYERSIZE 500
+#define INPUTLAYERSIZE 784
+#define OUTPUTLAYERSIZE 10
+#define NUMBEROFEPOCH 20
+#define BATCHSIZE 10000
+
 using namespace std;
 
 double* backPropLayer(double** weights, double* biases, double* deltaCost, double* prevActivation, int weightsLen, int weigthLenTwo, double* deltaNextActivation, double* nextActivation);
@@ -18,88 +25,120 @@ double matrixMultiplySum(double* inputs, double** weights, int indexInLayer, int
 double calcError(double* expected, double* actual)
 {
 	double sum = 0.0;
-	for(int i = 0; i < 10; i++)
+	for(int i = 0; i < OUTPUTLAYERSIZE; i++)
 	{
 		sum += (actual[i] - expected[i]) * (actual[i] - expected[i]);
 	}
-	return sum / 10.0;
+	return sum / (double)OUTPUTLAYERSIZE;
 }
 
 
+void loadData(double** inputData, double* inputLabels)
+{
+	ifstream dataFile;
+	ifstream labelFile;
+
+	dataFile.open("/home/michael/Documents/gitRepos/Machine-Learning/cpp_specific_nn_example/trainingData/train-images-idx3-ubyte");
+	labelFile.open("/home/michael/Documents/gitRepos/Machine-Learning/cpp_specific_nn_example/trainingData/train-labels-idx1-ubyte");
+
+	for(int j = 0; j < 16; j++)
+	{
+		char in;
+		if(j < 8)
+		{
+			labelFile >> in;
+		}
+		dataFile >> in;
+	}		
+
+	for(int i = 0; i < BATCHSIZE; i++)
+	{
+		char in;
+		labelFile.get(in);
+		inputLabels[i] = (double) in;
+
+		for(int k = 0; k < INPUTLAYERSIZE; k++)
+		{
+			char in;
+			dataFile.get(in);	
+			inputData[i][k] = (double)in;			
+		}
+	}
+}
+
 int main () {
 	srand(time(NULL));
+
+	//defining the input data storage
+	double** inputData = new double* [BATCHSIZE];
+
+	for(int i = 0; i < BATCHSIZE; i++)
+	{
+		inputData[i] = new double[INPUTLAYERSIZE];
+	}
+
+	double* inputLabels = new double[BATCHSIZE];
+
+	loadData(inputData, inputLabels);
+
 	//defining layers of specific sizeof
-	double* inputLayer = new double[784];
-	double* hiddenLayer = new double[800];
-	double* outputLayer = new double[10];
+	double* inputLayer = new double[INPUTLAYERSIZE];
+	double* hiddenLayer = new double[HIDDENLAYERSIZE];
+	double* outputLayer = new double[OUTPUTLAYERSIZE];
 
 	//defining biases of specific size
-	double* hiddenLayerBias = new double[800];
-	double* outputLayerBias = new double[10];
+	double* hiddenLayerBias = new double[HIDDENLAYERSIZE];
+	double* outputLayerBias = new double[OUTPUTLAYERSIZE];
 
 	double max = 10.0;
 	int maxIndex = 0;
 	int expectedindex = 0;
 	//defining weights of specific size
-	double** weightsOne = new double* [784];
-	for(int i = 0; i < 784; i++)
+	double** weightsOne = new double* [INPUTLAYERSIZE];
+	for(int i = 0; i < INPUTLAYERSIZE; i++)
 	{
-		weightsOne[i] = new double[800];
-		for(int j = 0; j < 800; j++)
+		weightsOne[i] = new double[HIDDENLAYERSIZE];
+		for(int j = 0; j < HIDDENLAYERSIZE; j++)
 		{
-			weightsOne[i][j] = (double)(rand() % 20 - 10);
+			weightsOne[i][j] = (double)(rand() % 20 - OUTPUTLAYERSIZE);
 		}
 	}
 
-	double** weightsTwo = new double* [800];
-	for(int i = 0; i < 800; i++)
+	double** weightsTwo = new double* [HIDDENLAYERSIZE];
+	for(int i = 0; i < HIDDENLAYERSIZE; i++)
 	{
-		weightsTwo[i] = new double[10];
-		for(int j = 0; j < 10; j++)
+		weightsTwo[i] = new double[OUTPUTLAYERSIZE];
+		for(int j = 0; j < OUTPUTLAYERSIZE; j++)
 		{
-			weightsTwo[i][j] = (double)(rand() % 20 - 10);
+			weightsTwo[i][j] = (double)(rand() % 20 - OUTPUTLAYERSIZE);
 		}
 	}
+
+
+
 	//number of learning cycles
-	for(int i = 0; i < 1; i++)
+	for(int i = 0; i < NUMBEROFEPOCH; i++)
 	{
-
-		ifstream dataFile;
-		ifstream labelFile;
-
-		dataFile.open("/home/michael/Documents/gitRepos/Machine-Learning/cpp_specific_nn_example/trainingData/train-images-idx3-ubyte");
-		labelFile.open("/home/michael/Documents/gitRepos/Machine-Learning/cpp_specific_nn_example/trainingData/train-labels-idx1-ubyte");
-
-		for(int j = 0; j < 16; j++)
+		double** weightsOneDelta = new double* [INPUTLAYERSIZE];
+		for(int j = 0; j < INPUTLAYERSIZE; j++)
 		{
-			char in;
-			if(j < 8)
-			{
-				labelFile >> in;
-			}
-			dataFile >> in;
-		}		
-
-		double** weightsOneDelta = new double* [784];
-		for(int j = 0; j < 784; j++)
-		{
-			weightsOneDelta[j] = new double[800];
+			weightsOneDelta[j] = new double[HIDDENLAYERSIZE];
 		}
 
-		double* hiddenBiasDelta = new double [800];
-		for(int q = 0; q < 800; q++)
+		double* hiddenBiasDelta = new double [HIDDENLAYERSIZE];
+		for(int q = 0; q < HIDDENLAYERSIZE; q++)
 		{
 			hiddenBiasDelta[q] = 0;
 		}
 
-		double** weightsTwoDelta = new double* [800]; 
-		for(int j = 0; j < 800; j++)
+		double** weightsTwoDelta = new double* [HIDDENLAYERSIZE]; 
+		for(int j = 0; j < HIDDENLAYERSIZE; j++)
 		{
-			weightsTwoDelta[j] = new double[10];
+			weightsTwoDelta[j] = new double[OUTPUTLAYERSIZE];
 		}
 
-		double* outputBiasDelta = new double[10];
-		for(int q = 0; q < 10; q++)
+		double* outputBiasDelta = new double[OUTPUTLAYERSIZE];
+		for(int q = 0; q < OUTPUTLAYERSIZE; q++)
 		{
 			outputBiasDelta[q] = 0;
 		}
@@ -108,37 +147,31 @@ int main () {
 		double score = 0.0;
 
 		//number of test cases ran through
-		for(int j = 0; j < 1000; j++)
+		for(int j = 0; j < BATCHSIZE; j++)
 		{
 			//set input layers to an input and expected output
-			double* expectedOutput = new double[10];
-			for(int q = 0; q < 10; q++)
+			double* expectedOutput = new double[OUTPUTLAYERSIZE];
+			for(int q = 0; q < OUTPUTLAYERSIZE; q++)
 			{
 				expectedOutput[q] = 0;
 			}
 
-			char in;
-			labelFile.get(in);
-			expectedindex = (int) in;
-			expectedOutput[(int)in] = 1.0;
+			expectedOutput[(int)inputLabels[j]] = 1.0;
 
-			for(int k = 0; k < 784; k++)
-			{
-				char in;
-				dataFile.get(in);	
-				inputLayer[k] = in;			
-			}
+			expectedindex = inputLabels[j];
 
-			double* deltaCost1 = new double[10];
+			inputLayer = inputData[j];
+
+			double* deltaCost1 = new double[OUTPUTLAYERSIZE];
 			
 			//forward propagation
-			for(int k = 0; k < 800; k++)
+			for(int k = 0; k < HIDDENLAYERSIZE; k++)
 			{
-				hiddenLayer[k] = sigmoid(matrixMultiplySum(inputLayer, weightsOne, k, 784) + hiddenLayerBias[k]);
+				hiddenLayer[k] = sigmoid(matrixMultiplySum(inputLayer, weightsOne, k, INPUTLAYERSIZE) + hiddenLayerBias[k]);
 			}
-			for(int k = 0; k < 10; k++)
+			for(int k = 0; k < OUTPUTLAYERSIZE; k++)
 			{
-				outputLayer[k] = sigmoid(matrixMultiplySum(hiddenLayer, weightsTwo, k, 800) + outputLayerBias[k]);
+				outputLayer[k] = sigmoid(matrixMultiplySum(hiddenLayer, weightsTwo, k, HIDDENLAYERSIZE) + outputLayerBias[k]);
 				if(outputLayer[k] > max) 
 				{
 					max = outputLayer[k];
@@ -151,30 +184,31 @@ int main () {
 				score++;
 			}
 			max = 0;
+			expectedindex = 0;
 
-			/*if(j % 100 == 0)
+			/*if(j % 500 == 0)
 			{
 				std::cout << "j: " << j << std::endl;				
 			}*/
 
 			error += calcError(expectedOutput, outputLayer);
 			//on to the back prop
-			double* deltaCost = new double[800];
-			deltaCost = backPropLayer(weightsTwo, outputLayerBias, deltaCost1, hiddenLayer, 800, 10, deltaCost, outputLayer);
-			double* arbRet = new double[784];
-			backPropLayer(weightsOne, hiddenLayerBias, deltaCost, inputLayer, 784, 800, arbRet, hiddenLayer);
+			double* deltaCost = new double[HIDDENLAYERSIZE];
+			deltaCost = backPropLayer(weightsTwo, outputLayerBias, deltaCost1, hiddenLayer, HIDDENLAYERSIZE, OUTPUTLAYERSIZE, deltaCost, outputLayer);
+			double* arbRet = new double[INPUTLAYERSIZE];
+			backPropLayer(weightsOne, hiddenLayerBias, deltaCost, inputLayer, INPUTLAYERSIZE, HIDDENLAYERSIZE, arbRet, hiddenLayer);
 			delete[] arbRet;
 			delete[] deltaCost;				
 			delete[] deltaCost1;
 			delete[] expectedOutput;
 		}
-		std::cout << "Round " << i << " error: " << error/1000.0 << " : " << score/1000.0 << std::endl;
-		for(int j = 0; j < 784; j++)
+		std::cout << "Round " << i << " error: " << error/(double)BATCHSIZE << " : " << score/(double)BATCHSIZE << std::endl;
+		for(int j = 0; j < INPUTLAYERSIZE; j++)
 		{
 			delete[] weightsOneDelta[j];
 		}
 		delete[] weightsOneDelta;
-		for(int j = 0; j < 800; j++)
+		for(int j = 0; j < HIDDENLAYERSIZE; j++)
 		{
 			delete[] weightsTwoDelta[j];
 		}
@@ -189,12 +223,12 @@ int main () {
 	//defining biases of specific size
 	delete[] hiddenLayerBias;
 	delete[] outputLayerBias;
-	for(int j = 0; j < 784; j++)
+	for(int j = 0; j < INPUTLAYERSIZE; j++)
 	{
 		delete[] weightsOne[j];
 	}
 	delete[] weightsOne;
-	for(int j = 0; j < 800; j++)
+	for(int j = 0; j < HIDDENLAYERSIZE; j++)
 	{
 		delete[] weightsTwo[j];
 	}
@@ -204,9 +238,9 @@ int main () {
 	ofstream weightsOneOutputFile;
 	weightsOneOutputFile.open("weightsOneOutputFile.txt");
 
-	for(int i = 0; i < 784; i++)
+	for(int i = 0; i < INPUTLAYERSIZE; i++)
 	{
-		for(int j = 0; j < 800; j++)
+		for(int j = 0; j < HIDDENLAYERSIZE; j++)
 		{
 			weightsOneOutputFile << weightsOne[i][j] << " ";
 			weightsOneOutputFile << std::endl;
@@ -217,7 +251,7 @@ int main () {
 	ofstream hiddenLayerBiasOutputFile;
 	hiddenLayerBiasOutputFile.open("hiddenLayerBiasOutputFile.txt");
 	
-	for(int i = 0; i < 800; i++)
+	for(int i = 0; i < HIDDENLAYERSIZE; i++)
 	{
 		hiddenLayerBiasOutputFile << hiddenLayerBias[i] << " ";
 		hiddenLayerBiasOutputFile << std::endl;
@@ -226,9 +260,9 @@ int main () {
 	ofstream weightsTwoOutputFile;
 	weightsTwoOutputFile.open("weightsTwoOutputFile.txt");
 
-	for(int i = 0; i < 800; i++)
+	for(int i = 0; i < HIDDENLAYERSIZE; i++)
 	{
-		for(int j = 0; j < 10; j++)
+		for(int j = 0; j < OUTPUTLAYERSIZE; j++)
 		{
 			weightsTwoOutputFile << weightsTwo[i][j] << " ";
 			weightsTwoOutputFile << std::endl;
@@ -239,7 +273,7 @@ int main () {
 	ofstream outputLayerBiasOutputFile;
 	outputLayerBiasOutputFile.open("outputLayerBiasOutputFile.txt");
 
-	for(int i = 0; i < 10; i++)
+	for(int i = 0; i < OUTPUTLAYERSIZE; i++)
 	{
 		outputLayerBiasOutputFile << outputLayerBias[i] << " ";
 		outputLayerBiasOutputFile << std::endl;
@@ -295,8 +329,8 @@ double* backPropLayer(double** weights, double* biases, double* deltaCost, doubl
 	{
 		for(int j = 0; j < weightsLenTwo; j++)
 		{
-			biases[j] -= .03 * deltaBiases[j];
-			weights[k][j] -= .03 * deltaWeights[k][j];
+			biases[j] -= .1 * deltaBiases[j];
+			weights[k][j] -= .1 * deltaWeights[k][j];
 		}
 	}
 
