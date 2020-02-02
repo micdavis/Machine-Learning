@@ -1,11 +1,12 @@
 #include <array>
+#include <vector>
 #include "Neuron.h"
 
 class Layer
 {
-	public:
-		std::array<Neuron> neurons;
+	private:
+		std::vector<Neuron*> neuronList;
 		int size;
+  public:
 		Layer(int size);
-
-}
+};
