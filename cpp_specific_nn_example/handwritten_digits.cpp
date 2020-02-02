@@ -12,7 +12,7 @@
 #define INPUTLAYERSIZE 784
 #define OUTPUTLAYERSIZE 10
 #define NUMBEROFEPOCH 20
-#define BATCHSIZE 10000
+#define BATCHSIZE 2500
 
 using namespace std;
 
@@ -93,6 +93,7 @@ int main () {
 	double max = 10.0;
 	int maxIndex = 0;
 	int expectedindex = 0;
+
 	//defining weights of specific size
 	double** weightsOne = new double* [INPUTLAYERSIZE];
 	for(int i = 0; i < INPUTLAYERSIZE; i++)
